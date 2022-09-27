@@ -3,6 +3,11 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session');
+
+//PASSPORT FILES//
+const passport = require('passport');
+const GitHubStrategy = require('passport-github').Strategy
 
 var indexRouter = require('./routes/index');
 
@@ -12,6 +17,28 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }))
+
+//PASSPORT CONFIG//
+app.use(session({
+  secret: 'I love Express!',
+  resave: false,
+  saveUninitialized: true,
+}))
+app.use(passport.initialize());
+app.use(passport.session());
+const passportConfig = require('./config')
+passport.use(new GitHubStrategy(passportConfig,
+function(accessToken, refreshToken, profile, cb) {
+  console.log(profile);
+  return cb(null, profile);
+}
+));
+passport.serializeUser((user, cb)=>{
+  cb(null,user);
+})
+passport.deserializeUser((user,cb)=>{
+  cb(null,user)
+})
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -28,12 +55,12 @@ app.listen(3000)
 app.use('/', indexRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
